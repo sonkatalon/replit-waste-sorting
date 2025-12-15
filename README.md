@@ -1,15 +1,18 @@
 # Sort It - Waste Classification App
 
 ## Overview
+
 A web application that helps users determine how to properly dispose of items by analyzing photos. Uses OpenAI's vision model to classify items into Recycle, Landfill, Compost, or Special categories.
 
 ## Tech Stack
+
 - **Frontend**: Next.js 15 with React 19, TypeScript, Tailwind CSS
 - **Backend**: Next.js API routes
 - **AI**: OpenAI GPT-5 Vision API for image classification
 - **Storage**: Local storage for scan history (last 20 items), file-based server storage for feedback
 
 ## Project Structure
+
 ```
 /
 ├── components/          # React components
@@ -35,6 +38,7 @@ A web application that helps users determine how to properly dispose of items by
 ```
 
 ## Features
+
 - **Image Capture**: Camera or file upload for waste item photos
 - **AI Classification**: Identifies disposal category with confidence score
 - **Prep Steps**: Shows preparation instructions (rinse, remove lid, etc.)
@@ -45,20 +49,26 @@ A web application that helps users determine how to properly dispose of items by
 ## API Endpoints
 
 ### POST /api/classify
+
 Classifies a waste item image.
+
 - Body: `{ image: string (base64), region: string }`
 - Response: `{ success: boolean, data: ClassificationResult }`
 - Rate limited: 10 requests per minute per IP
 
 ### POST /api/feedback
+
 Records user feedback on classification accuracy.
+
 - Body: `{ scanId: string, isCorrect: boolean, correctCategory?: string }`
 - Response: `{ success: boolean, data: { message: string } }`
 
 ## Environment Variables
+
 - `OPENAI_API_KEY` - Required for AI classification
 
 ## Running Locally
+
 ```bash
 npm run dev   # Development on port 5000
 npm run build # Production build
