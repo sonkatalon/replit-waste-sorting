@@ -102,6 +102,10 @@ CATEGORIES:
           ],
         },
       ],
+      experimental_telemetry: {
+        // https://langfuse.com/integrations/frameworks/vercel-ai-sdk
+        isEnabled: true,
+      },
     });
 
     return validateAndClampResult(object);

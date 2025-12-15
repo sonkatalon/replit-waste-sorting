@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { langfuseSpanProcessor } from '../../instrumentation';
 import { classifyWaste } from '../../lib/openai';
 import { ApiResponse, ClassificationResult } from '../../types';
 
@@ -69,6 +70,10 @@ export default async function handler(
     }
 
     const result = await classifyWaste(base64Data, mimeType, region);
+
+    // https://langfuse.com/integrations/frameworks/vercel-ai-sdk
+    // Critical for serverless: flush traces before function terminates
+    await langfuseSpanProcessor.forceFlush();
 
     return res.status(200).json({ success: true, data: result });
   } catch (error) {
