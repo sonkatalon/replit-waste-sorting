@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { langfuseSpanProcessor } from '../../instrumentation';
-import { classifyWaste } from '../../lib/openai';
+import { classifyWaste } from '../../lib/ai';
 import { ApiResponse, ClassificationResult } from '../../types';
 
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
