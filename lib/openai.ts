@@ -70,35 +70,47 @@ You MUST respond with valid JSON only, matching this exact schema:
   "secondaryConfidence": 0.0-1.0
 }`;
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-5",
-    messages: [
-      { role: "system", content: systemPrompt },
-      {
-        role: "user",
-        content: [
-          {
-            type: "text",
-            text: "Classify this waste item and return JSON only."
-          },
-          {
-            type: "image_url",
-            image_url: {
-              url: `data:${mimeType};base64,${base64Image}`
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        { role: "system", content: systemPrompt },
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "Classify this waste item and return JSON only."
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: `data:${mimeType};base64,${base64Image}`
+              }
             }
-          }
-        ],
-      },
-    ],
-    response_format: { type: "json_object" },
-    max_completion_tokens: 1024,
-  });
+          ],
+        },
+      ],
+      response_format: { type: "json_object" },
+      max_tokens: 1024,
+    });
 
-  const content = response.choices[0]?.message?.content;
-  if (!content) {
-    throw new Error("No response from AI model");
+    const content = response.choices[0]?.message?.content;
+    if (!content) {
+      console.error("Empty response from OpenAI:", JSON.stringify(response));
+      throw new Error("No response from AI model");
+    }
+
+    const parsed = JSON.parse(content);
+    return validateAndClampResult(parsed);
+  } catch (error: any) {
+    console.error("OpenAI API error:", error?.message || error);
+    if (error?.status === 401) {
+      throw new Error("Invalid API key. Please check your OpenAI API key.");
+    }
+    if (error?.status === 429) {
+      throw new Error("Rate limit exceeded. Please try again in a moment.");
+    }
+    throw error;
   }
-
-  const parsed = JSON.parse(content);
-  return validateAndClampResult(parsed);
 }
