@@ -1,0 +1,82 @@
+
+You are an expert full-stack engineer shipping an MVP and then an iteration-ready v1.
+
+### Product goal
+
+Build an artifact that helps users figure out whether an item should go in **recycling, landfill, compost, or special handling** by letting them **take a photo** (or upload one) and returning a **clear recommendation** with **confidence**, **reasoning**, and **localization options**.
+
+### Core user flow
+
+1. User opens app → taps **Take Photo** (camera) or **Upload**.
+2. App sends image to backend for analysis.
+3. Backend returns:
+
+   * Primary category: `Recycle | Landfill | Compost | Special`
+   * Confidence score (0–1)
+   * Short explanation
+   * “Check locally” note (rules vary)
+   * Optional: secondary category with lower confidence
+4. App shows results card + “Why?” expandable details + “Report wrong” feedback.
+5. User can tap “More info” to see common prep steps: “rinse”, “remove lid”, “flatten”, etc.
+
+### MVP requirements (must have)
+
+* **Image capture & upload**
+* **Inference endpoint** that accepts an image and returns structured JSON
+* **UI result screen** with category, confidence, and explanation
+* **History** (local device storage is fine): last 20 scans
+* **Feedback button**: user can mark result Correct/Incorrect and optionally pick the right category (store this server-side for future improvements)
+* Basic error handling (no internet, low confidence, bad photo)
+
+### Classification approach
+
+Implement using a **multimodal vision model** (image understanding) through a hosted API (choose one):
+
+* Option A: OpenAI Vision model via API
+* Option B: Google Vision + custom rules
+* Option C: Local model (only if feasible; otherwise skip for MVP)
+
+For MVP, prioritize correctness + speed over perfect taxonomy. If uncertain, return `Special` with guidance (“rules vary; check your local facility”).
+
+### Local rules / regions
+
+Rules differ by municipality. Implement a simple first version:
+
+* App has a “Region” setting (default: “Generic / Unknown”).
+* Backend prompt includes region when provided.
+* Include a disclaimer in UI: “Local rules vary.”
+
+Don’t build a full local database in MVP; design code so we can add it later.
+
+### Model prompting (backend)
+
+Use a robust prompt that forces structured output and avoids hallucination. The model must:
+
+* Be conservative with recycling claims
+* Prefer “Special” when unknown
+* Mention contamination (food residue) as common reason something becomes landfill
+* Return JSON only (validated with a schema)
+
+Include a post-processing validator:
+
+* Ensure category is one of allowed values
+* Clamp confidence to [0,1]
+* If confidence < 0.55, force category to `Special` and adjust explanation to “Not sure”.
+
+### UX details
+
+* Home screen: big camera button + upload button + region selector icon
+* Result screen: large color-coded badge (category), confidence, item guess, prep steps bullets
+* Low confidence state: “Not sure” + suggestions to retake photo (better lighting, show label, include size reference)
+* History screen: list of scans with thumbnail + category + date
+
+### Non-functional requirements
+
+* Keep images private: do not store images server-side by default (only store temporary file for inference and then delete). Store only derived metadata unless user opts in.
+* Add basic rate limiting to prevent abuse.
+* Log errors without logging raw images.
+
+### Definition of done
+
+* I can run the app, take a photo, get a recommendation, view history, and submit feedback.
+* All outputs are robustly structured and errors are handled gracefully.
