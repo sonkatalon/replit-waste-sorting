@@ -52,7 +52,7 @@ export default async function handler(
   }
 
   try {
-    const { image, region } = req.body;
+    const { image } = req.body;
 
     if (!image) {
       return res.status(400).json({ success: false, error: 'No image provided' });
@@ -69,7 +69,7 @@ export default async function handler(
       });
     }
 
-    const result = await classifyWaste(base64Data, mimeType, region);
+    const result = await classifyWaste(base64Data, mimeType);
 
     // https://langfuse.com/integrations/frameworks/vercel-ai-sdk
     // Critical for serverless: flush traces before function terminates

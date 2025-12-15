@@ -2,14 +2,15 @@
 
 ## Overview
 
-A web application that helps users determine how to properly dispose of items by analyzing photos. Uses OpenAI's vision model to classify items into Recycle, Landfill, Compost, or Special categories.
+A web application that helps users determine how to properly dispose of items by analyzing photos. Uses Google Gemini's vision model (via Vercel AI SDK) to classify items into Recycle, Landfill, Compost, or Special categories.
 
 ## Tech Stack
 
 - **Frontend**: Next.js 15 with React 19, TypeScript, Tailwind CSS
 - **Backend**: Next.js API routes
-- **AI**: OpenAI GPT-5 Vision API for image classification
-- **Storage**: Local storage for scan history (last 20 items), file-based server storage for feedback
+- **AI**: Vercel AI SDK with Google Gemini for image classification
+- **Observability**: Langfuse for AI tracing and monitoring
+- **Storage**: Local storage for scan history (last 20 items)
 
 ## Project Structure
 
@@ -19,22 +20,18 @@ A web application that helps users determine how to properly dispose of items by
 │   ├── CategoryBadge.tsx      # Color-coded disposal category badge
 │   ├── ConfidenceMeter.tsx    # Visual confidence indicator
 │   ├── ImageCapture.tsx       # Camera/upload buttons
-│   ├── RegionSelector.tsx     # Location selector dropdown
-│   └── ResultCard.tsx         # Full result display with feedback
+│   └── ResultCard.tsx         # Full result display
 ├── lib/                 # Utility libraries
-│   ├── openai.ts             # OpenAI API integration with validation
+│   ├── ai.ts                 # Vercel AI SDK integration with validation
 │   └── storage.ts            # Local storage helpers
 ├── pages/               # Next.js pages
 │   ├── api/
-│   │   ├── classify.ts       # POST /api/classify - image classification
-│   │   └── feedback.ts       # POST /api/feedback - user corrections
+│   │   └── classify.ts       # POST /api/classify - image classification
 │   ├── _app.tsx
 │   ├── history.tsx           # Scan history page
 │   └── index.tsx             # Main app page
-├── types/               # TypeScript types
-│   └── index.ts
-└── data/                # Server-side data (created at runtime)
-    └── feedback.json         # User feedback records
+└── types/               # TypeScript types
+    └── index.ts
 ```
 
 ## Features
@@ -42,9 +39,7 @@ A web application that helps users determine how to properly dispose of items by
 - **Image Capture**: Camera or file upload for waste item photos
 - **AI Classification**: Identifies disposal category with confidence score
 - **Prep Steps**: Shows preparation instructions (rinse, remove lid, etc.)
-- **Regional Context**: Adjusts recommendations based on selected location
 - **Scan History**: Last 20 scans stored locally
-- **Feedback System**: Users can report incorrect classifications
 
 ## API Endpoints
 
@@ -52,20 +47,16 @@ A web application that helps users determine how to properly dispose of items by
 
 Classifies a waste item image.
 
-- Body: `{ image: string (base64), region: string }`
+- Body: `{ image: string (base64) }`
 - Response: `{ success: boolean, data: ClassificationResult }`
 - Rate limited: 10 requests per minute per IP
 
-### POST /api/feedback
-
-Records user feedback on classification accuracy.
-
-- Body: `{ scanId: string, isCorrect: boolean, correctCategory?: string }`
-- Response: `{ success: boolean, data: { message: string } }`
-
 ## Environment Variables
 
-- `OPENAI_API_KEY` - Required for AI classification
+- `GOOGLE_GENERATIVE_AI_API_KEY` - Required for AI classification (Google Gemini)
+- `LANGFUSE_PUBLIC_KEY` - Optional, for observability
+- `LANGFUSE_SECRET_KEY` - Optional, for observability
+- `LANGFUSE_BASEURL` - Optional, Langfuse host URL
 
 ## Running Locally
 

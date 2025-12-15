@@ -65,8 +65,7 @@ function validateAndClampResult(
 
 export async function classifyWaste(
   base64Image: string,
-  mimeType: string = "image/jpeg",
-  region: string = "Generic / Unknown"
+  mimeType: string = "image/jpeg"
 ): Promise<ClassificationResult> {
   const systemPrompt = `You are a waste classification expert. Analyze the image and determine the correct disposal category.
 
@@ -74,7 +73,6 @@ RULES:
 - Be CONSERVATIVE with recycling claims. When in doubt, prefer "Special" or "Landfill"
 - Food-contaminated items (grease, food residue) should go to "Landfill" or "Compost"
 - If you cannot identify the item or are uncertain, return "Special" with guidance
-- Consider the user's region when making recommendations: ${region}
 
 CATEGORIES:
 - Recycle: Clean paper, cardboard, metal cans, glass bottles, plastic bottles (#1, #2)

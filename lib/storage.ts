@@ -29,13 +29,3 @@ export function clearHistory(): void {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(HISTORY_KEY);
 }
-
-export function getRegion(): string {
-  if (typeof window === 'undefined') return 'Generic / Unknown';
-  return localStorage.getItem('sortit_region') || 'Generic / Unknown';
-}
-
-export function setRegion(region: string): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem('sortit_region', region);
-}

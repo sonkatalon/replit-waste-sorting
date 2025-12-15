@@ -1,24 +1,14 @@
 import { useState } from 'react';
-import { ClassificationResult, Category } from '../types';
+import { ClassificationResult } from '../types';
 import CategoryBadge from './CategoryBadge';
 import ConfidenceMeter from './ConfidenceMeter';
 
 interface ResultCardProps {
   result: ClassificationResult;
-  scanId: string;
-  onFeedback: (scanId: string, isCorrect: boolean, correctCategory?: Category) => void;
 }
 
-export default function ResultCard({ result, scanId, onFeedback }: ResultCardProps) {
+export default function ResultCard({ result }: ResultCardProps) {
   const [showDetails, setShowDetails] = useState(false);
-  const [showFeedback, setShowFeedback] = useState(false);
-  const [feedbackSent, setFeedbackSent] = useState(false);
-
-  const handleFeedback = (isCorrect: boolean, correctCategory?: Category) => {
-    onFeedback(scanId, isCorrect, correctCategory);
-    setFeedbackSent(true);
-    setShowFeedback(false);
-  };
 
   return (
     <div className="bg-white rounded-2xl shadow-lg p-6 max-w-md w-full">
@@ -61,61 +51,10 @@ export default function ResultCard({ result, scanId, onFeedback }: ResultCardPro
       </div>
 
       {result.secondaryCategory && (
-        <div className="text-sm text-gray-500 mb-4">
+        <div className="text-sm text-gray-500">
           Might also be: <CategoryBadge category={result.secondaryCategory} size="sm" />
           {result.secondaryConfidence && ` (${Math.round(result.secondaryConfidence * 100)}%)`}
         </div>
-      )}
-
-      {!feedbackSent ? (
-        <div className="border-t pt-4">
-          {!showFeedback ? (
-            <button
-              onClick={() => setShowFeedback(true)}
-              className="text-gray-500 text-sm hover:text-gray-700"
-            >
-              Report wrong result
-            </button>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-sm text-gray-600">Was this result correct?</p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleFeedback(true)}
-                  className="flex-1 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200"
-                >
-                  Correct
-                </button>
-                <button
-                  onClick={() => handleFeedback(false)}
-                  className="flex-1 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
-                >
-                  Wrong
-                </button>
-              </div>
-              {showFeedback && (
-                <div className="space-y-2">
-                  <p className="text-sm text-gray-600">Select correct category:</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {(['Recycle', 'Landfill', 'Compost', 'Special'] as Category[]).map(cat => (
-                      <button
-                        key={cat}
-                        onClick={() => handleFeedback(false, cat)}
-                        className="py-2 px-3 bg-gray-100 rounded-lg hover:bg-gray-200 text-sm"
-                      >
-                        {cat}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      ) : (
-        <p className="text-center text-green-600 text-sm border-t pt-4">
-          Thank you for your feedback!
-        </p>
       )}
     </div>
   );

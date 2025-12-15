@@ -18,13 +18,6 @@ export interface ScanHistoryItem {
   result: ClassificationResult;
 }
 
-export interface FeedbackPayload {
-  scanId: string;
-  isCorrect: boolean;
-  correctCategory?: Category;
-  timestamp: number;
-}
-
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;

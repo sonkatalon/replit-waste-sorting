@@ -1,28 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import ImageCapture from '../components/ImageCapture';
 import ResultCard from '../components/ResultCard';
-import RegionSelector from '../components/RegionSelector';
-import { ClassificationResult, Category, ScanHistoryItem } from '../types';
-import { addToHistory, getRegion, setRegion as saveRegion } from '../lib/storage';
+import { ClassificationResult, ScanHistoryItem } from '../types';
+import { addToHistory } from '../lib/storage';
 
 export default function Home() {
-  const [region, setRegionState] = useState('Generic / Unknown');
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<ClassificationResult | null>(null);
-  const [scanId, setScanId] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
-
-  useEffect(() => {
-    setRegionState(getRegion());
-  }, []);
-
-  const handleRegionChange = (newRegion: string) => {
-    setRegionState(newRegion);
-    saveRegion(newRegion);
-  };
 
   const handleCapture = async (imageData: string) => {
     setCapturedImage(imageData);
@@ -34,7 +22,7 @@ export default function Home() {
       const response = await fetch('/api/classify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: imageData, region }),
+        body: JSON.stringify({ image: imageData }),
       });
 
       const data = await response.json();
@@ -44,13 +32,12 @@ export default function Home() {
       }
 
       const newScanId = `scan_${Date.now()}`;
-      setScanId(newScanId);
       setResult(data.data);
 
-      const thumbnail = imageData.length > 50000 
-        ? imageData.substring(0, 50000) + '...' 
+      const thumbnail = imageData.length > 50000
+        ? imageData.substring(0, 50000) + '...'
         : imageData;
-      
+
       const historyItem: ScanHistoryItem = {
         id: newScanId,
         timestamp: Date.now(),
@@ -65,23 +52,10 @@ export default function Home() {
     }
   };
 
-  const handleFeedback = async (id: string, isCorrect: boolean, correctCategory?: Category) => {
-    try {
-      await fetch('/api/feedback', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scanId: id, isCorrect, correctCategory }),
-      });
-    } catch {
-      console.error('Failed to submit feedback');
-    }
-  };
-
   const handleReset = () => {
     setCapturedImage(null);
     setResult(null);
     setError(null);
-    setScanId('');
   };
 
   return (
@@ -97,15 +71,12 @@ export default function Home() {
         <header className="sticky top-0 bg-white/80 backdrop-blur-sm shadow-sm z-10">
           <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
             <h1 className="text-xl font-bold text-gray-800">♻️ Sort It</h1>
-            <div className="flex items-center gap-3">
-              <Link 
-                href="/history" 
-                className="p-2 text-gray-600 hover:text-gray-800"
-              >
-                📋
-              </Link>
-              <RegionSelector region={region} onRegionChange={handleRegionChange} />
-            </div>
+            <Link
+              href="/history"
+              className="p-2 text-gray-600 hover:text-gray-800"
+            >
+              📋
+            </Link>
           </div>
         </header>
 
@@ -143,11 +114,7 @@ export default function Home() {
 
           {result && (
             <div className="mb-6">
-              <ResultCard 
-                result={result} 
-                scanId={scanId} 
-                onFeedback={handleFeedback} 
-              />
+              <ResultCard result={result} />
               <button
                 onClick={handleReset}
                 className="w-full mt-4 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
