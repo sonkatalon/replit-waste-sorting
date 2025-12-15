@@ -9,7 +9,6 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@ai-sdk/google": "^2.0.0",
     "@tailwindcss/postcss": "^4.1.18",
     "ai": "^5.0.0",
     "autoprefixer": "^10.4.23",

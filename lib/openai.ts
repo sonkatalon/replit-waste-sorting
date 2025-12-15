@@ -1,5 +1,4 @@
 import { generateObject } from "ai";
-import { google } from "@ai-sdk/google";
 import { z } from "zod";
 import { ClassificationResult, Category } from "../types";
 
@@ -85,7 +84,7 @@ CATEGORIES:
 
   try {
     const { object } = await generateObject({
-      model: google("gemini-3-pro-preview"),
+      model: "google/gemini-3-pro-preview",
       schema: classificationSchema,
       messages: [
         { role: "system", content: systemPrompt },
