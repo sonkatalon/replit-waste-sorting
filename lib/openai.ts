@@ -1,27 +1,48 @@
-import OpenAI from "openai";
+import { generateObject } from "ai";
+import { google } from "@ai-sdk/google";
+import { z } from "zod";
 import { ClassificationResult, Category } from "../types";
 
-// the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const ALLOWED_CATEGORIES: Category[] = [
+  "Recycle",
+  "Landfill",
+  "Compost",
+  "Special",
+];
 
-const ALLOWED_CATEGORIES: Category[] = ['Recycle', 'Landfill', 'Compost', 'Special'];
+const classificationSchema = z.object({
+  category: z.enum(["Recycle", "Landfill", "Compost", "Special"]),
+  confidence: z.number().min(0).max(1),
+  itemGuess: z.string(),
+  explanation: z.string(),
+  prepSteps: z.array(z.string()),
+  localNote: z.string(),
+  secondaryCategory: z
+    .enum(["Recycle", "Landfill", "Compost", "Special"])
+    .optional(),
+  secondaryConfidence: z.number().min(0).max(1).optional(),
+});
 
-function validateAndClampResult(raw: any): ClassificationResult {
-  let category: Category = ALLOWED_CATEGORIES.includes(raw.category) 
-    ? raw.category 
-    : 'Special';
-  
-  let confidence = typeof raw.confidence === 'number' 
-    ? Math.max(0, Math.min(1, raw.confidence)) 
-    : 0.5;
-  
+function validateAndClampResult(
+  raw: z.infer<typeof classificationSchema>
+): ClassificationResult {
+  let category: Category = ALLOWED_CATEGORIES.includes(raw.category)
+    ? raw.category
+    : "Special";
+
+  let confidence =
+    typeof raw.confidence === "number"
+      ? Math.max(0, Math.min(1, raw.confidence))
+      : 0.5;
+
   if (confidence < 0.55) {
-    category = 'Special';
+    category = "Special";
   }
-  
-  const explanation = confidence < 0.55
-    ? "Not sure about this item. The image may be unclear, or this item has rules that vary significantly by location. Try retaking the photo with better lighting, showing any labels, or including a size reference."
-    : (raw.explanation || "Unable to determine explanation.");
+
+  const explanation =
+    confidence < 0.55
+      ? "Not sure about this item. The image may be unclear, or this item has rules that vary significantly by location. Try retaking the photo with better lighting, showing any labels, or including a size reference."
+      : raw.explanation || "Unable to determine explanation.";
 
   return {
     category,
@@ -29,18 +50,22 @@ function validateAndClampResult(raw: any): ClassificationResult {
     itemGuess: raw.itemGuess || "Unknown item",
     explanation,
     prepSteps: Array.isArray(raw.prepSteps) ? raw.prepSteps : [],
-    localNote: raw.localNote || "Local rules may vary. Check with your municipality.",
-    secondaryCategory: raw.secondaryCategory && ALLOWED_CATEGORIES.includes(raw.secondaryCategory) 
-      ? raw.secondaryCategory 
-      : undefined,
-    secondaryConfidence: typeof raw.secondaryConfidence === 'number'
-      ? Math.max(0, Math.min(1, raw.secondaryConfidence))
-      : undefined,
+    localNote:
+      raw.localNote || "Local rules may vary. Check with your municipality.",
+    secondaryCategory:
+      raw.secondaryCategory &&
+      ALLOWED_CATEGORIES.includes(raw.secondaryCategory)
+        ? raw.secondaryCategory
+        : undefined,
+    secondaryConfidence:
+      typeof raw.secondaryConfidence === "number"
+        ? Math.max(0, Math.min(1, raw.secondaryConfidence))
+        : undefined,
   };
 }
 
 export async function classifyWaste(
-  base64Image: string, 
+  base64Image: string,
   mimeType: string = "image/jpeg",
   region: string = "Generic / Unknown"
 ): Promise<ClassificationResult> {
@@ -56,23 +81,12 @@ CATEGORIES:
 - Recycle: Clean paper, cardboard, metal cans, glass bottles, plastic bottles (#1, #2)
 - Landfill: Contaminated items, mixed materials, plastic bags, styrofoam, broken glass
 - Compost: Food scraps, yard waste, coffee grounds, paper towels
-- Special: Electronics, batteries, light bulbs, medications, paint, hazardous materials, or when uncertain
-
-You MUST respond with valid JSON only, matching this exact schema:
-{
-  "category": "Recycle" | "Landfill" | "Compost" | "Special",
-  "confidence": 0.0-1.0,
-  "itemGuess": "what you think the item is",
-  "explanation": "brief explanation for the classification",
-  "prepSteps": ["step1", "step2"],
-  "localNote": "any regional considerations",
-  "secondaryCategory": "optional alternative category",
-  "secondaryConfidence": 0.0-1.0
-}`;
+- Special: Electronics, batteries, light bulbs, medications, paint, hazardous materials, or when uncertain`;
 
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+    const { object } = await generateObject({
+      model: google("gemini-3-pro-preview"),
+      schema: classificationSchema,
       messages: [
         { role: "system", content: systemPrompt },
         {
@@ -80,35 +94,30 @@ You MUST respond with valid JSON only, matching this exact schema:
           content: [
             {
               type: "text",
-              text: "Classify this waste item and return JSON only."
+              text: "Classify this waste item.",
             },
             {
-              type: "image_url",
-              image_url: {
-                url: `data:${mimeType};base64,${base64Image}`
-              }
-            }
+              type: "image",
+              image: `data:${mimeType};base64,${base64Image}`,
+            },
           ],
         },
       ],
-      response_format: { type: "json_object" },
-      max_tokens: 1024,
     });
 
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      console.error("Empty response from OpenAI:", JSON.stringify(response));
-      throw new Error("No response from AI model");
-    }
-
-    const parsed = JSON.parse(content);
-    return validateAndClampResult(parsed);
+    return validateAndClampResult(object);
   } catch (error: any) {
-    console.error("OpenAI API error:", error?.message || error);
-    if (error?.status === 401) {
-      throw new Error("Invalid API key. Please check your OpenAI API key.");
+    console.error("AI SDK error:", error?.message || error);
+    if (
+      error?.message?.includes("401") ||
+      error?.message?.includes("API key")
+    ) {
+      throw new Error("Invalid API key. Please check your Google API key.");
     }
-    if (error?.status === 429) {
+    if (
+      error?.message?.includes("429") ||
+      error?.message?.includes("rate limit")
+    ) {
       throw new Error("Rate limit exceeded. Please try again in a moment.");
     }
     throw error;
